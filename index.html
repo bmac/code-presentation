@@ -37,54 +37,117 @@
 			<div class="slides">
 
 				<section>
-					<h1>Code Presentation</h1>
+					<h1>Knockout.js</h1>
 					<p>
 					  <small>By Brendan McLoughlin</small>
 					</p>
 				</section>
 
 				<section>
-					<h1>Demo</h1>
-					<p>
-					  I built a html5 <a href="http://localhost:8000/index.html" target="_blank">podcast subscription manager</a>
-					</p>
-				</section>
-
-				<section>
-					<h1>Timeline</h1>
-					<p>
-					  Most of the server side rest framework was written about 6 months ago to scratch an itch. The frontend code was developed last Friday/Saturday.
-					</p>
-				</section>
-
-				<section>
-				  <section>
-					<h1>Technology</h1>
-				  </section>
-				  <section>
-					<h3>Server</h3>
+					<h2>Outline</h2>
 					<ul>
-					  <li>Python</li>
-					  <li>Django - MVC Framework</li>
-					  <li>djangorestframework - Rest layer for django</li>
-					  <li>feedparser - Working with itunes podcast feeds.</li>
+					  <li>What is Knockout.js?</li>
+					  <li>What can Knockout.js do?</li>
+					  <li>Best Practices</li>
 					</ul>
-					</section>
-					<section>
-					<h3>Browser</h3>
-					<ul>
-					  <li>HTML 5</li>
-					  <li>Require.js - Dependency Management</li>
-					  <li>jQuery - Selecting dom elements, ajax</li>
-					  <li>John Resig's Simple Inheritence Library - Encapsulating common code, working with prototypes</li>
-					  <li>Knockout.js - Data Binding, templating</li>
-					  <li>QUnit - Testing</li>
-					</ul>
-					</section>
 				</section>
 
 				<section>
-				  <h1>Server Code</h1>
+				  <h2>Knockout.js</h2>
+				  <ul>
+				    <li>Automatic dependency tracking</li>
+				    <li>Declarative bindings</li>
+				    <li>Dom Templates</li>
+				  </ul>				  
+				  <aside class="notes">
+				    Knockout was created in 2010 by Steve Sanderson to as a library that provides WPF like data binding for html.
+				  </aside>
+				</section>
+				<section>
+				  <h3>MVVM</h3>
+				  <ul>
+				    <li>Model</li>
+				    <li>View</li>
+				    <li>ViewModel</li>
+				  </ul>
+				  <aside class="notes">
+I see MVVM as very similar to MVP where the VM is resposible for the same roles as the P in MVP. The exception is the view model has this idea of a data binding layer. So when values on the viewModel are updated some existing framework takes care of updating the View Layer for you. 
+				  </aside>
+				</section>
+
+				<section>
+				  <h1>Observables</h1>
+				  <pre><code >
+var foo = ko.observable('foo');
+foo(); // foo
+foo(123);
+foo(); // 123
+				  </code></pre>
+				</section>
+				<section>
+				  <h1>Subscriptions</h1>
+				  <pre><code >
+var foo = ko.observable('foo');
+foo.subscribe(function(newValue) {
+    console.log("foo's value has changed to ", newValue);
+});
+foo('bar'); // foo's value has changed to bar
+				  </code></pre>
+				</section>
+				<section>
+				  <h1>Observable Array</h1>
+				  <pre><code >
+var myArray = ko.observableArray([]);
+myArray.push('new value');
+myArray.pop();
+myArray.unshift('another new value');
+myArray.shift();
+myArray.reverse();
+myArray.sort();
+
+myArray([1, 2, 3]);
+				  </code></pre>
+				</section>
+				<section>
+				  <h1>Computed Observable</h1>
+				  <pre><code>
+var drink = ko.observable('milk');
+var food = ko.observable('cookies');
+var meal = ko.computed(function() {
+    return food() + ' and ' + drink();
+});
+meal(); // cookies and milk
+food('cereal');
+meal(); // cereal and milk
+				  </code></pre>
+				</section>
+				<section id="data-binding-example">
+				  <h3>Data Binding</h3>
+				  <pre ><div class="javascript code">
+<span class="keyword">var</span> viewModel = {
+    food: ko.observable(<span class="string">'<!-- ko text: food --><!-- /ko -->'</span>),
+    drink: ko.observable(<span class="string">'<!-- ko text: drink --><!-- /ko -->'</span>)
+    })
+};
+viewModel.meal = ko.computed(<span class="keyword">function</span>() {
+        <span class="keyword">return</span> <span class="keyword">this</span>.food() + <span class="string">' and '</span> + <span class="keyword">this</span>.drink();
+    }, viewModel); <span class="comment">// <!-- ko text: meal --><!-- /ko --> </span>
+ko.applyBindings(viewModel, document.getElementById(<span class="string">'data-binding-example'</span>));				  
+				  </div></pre>
+				  <pre><code>
+&lt;div id="data-binding-example"&gt;
+  &lt;label&gt;Food: &lt;input type="text" data-bind="value: food"&gt;&lt;/label&gt;
+  &lt;label&gt;Drink: &lt;input type="text" data-bind="value: drink"&gt;&lt;/label&gt;
+  Your meal is: &lt;!-- ko text: meal --&gt;&lt;!-- /ko --&gt;
+&lt;/div&gt;
+				  </code></pre>
+				  <div>
+				    <label>Food: 
+				      <input type="text" data-bind="value: food"></label>
+				    <label>Drink: <input type="text" data-bind="value: drink"></label>
+<div>				    
+				    Your meal is: <!-- ko text: meal --><!-- /ko --></div>
+				  </div> 
 				</section>
 				<section>
 				  <h3>Models should contain data not logic</h3>
@@ -585,6 +648,16 @@ define(['jquery'], function($) {
 			});
 
 		</script>
-
+<script type="text/javascript" src="./js/knockout-2.2.1.js"></script>
+<script type="text/javascript">
+var viewModel = {
+    food: ko.observable(''),
+    drink: ko.observable('')
+};
+viewModel.meal = ko.computed(function() {
+        return this.food() + ' and ' + this.drink();
+    }, viewModel);
+ko.applyBindings(viewModel, document.getElementById('data-binding-example'));
+</script>
 	</body>
 </html>

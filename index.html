@@ -122,12 +122,11 @@ meal(); // cereal and milk
 				  </code></pre>
 				</section>
 				<section id="data-binding-example">
-				  <h3>Data Binding</h3>
+				  <h4>Data Binding</h4>
 				  <pre ><div class="javascript code">
 <span class="keyword">var</span> viewModel = {
     food: ko.observable(<span class="string">'<!-- ko text: food --><!-- /ko -->'</span>),
     drink: ko.observable(<span class="string">'<!-- ko text: drink --><!-- /ko -->'</span>)
-    })
 };
 viewModel.meal = ko.computed(<span class="keyword">function</span>() {
         <span class="keyword">return</span> <span class="keyword">this</span>.food() + <span class="string">' and '</span> + <span class="keyword">this</span>.drink();
@@ -149,27 +148,28 @@ ko.applyBindings(viewModel, document.getElementById(<span class="string">'data-b
 				    Your meal is: <!-- ko text: meal --><!-- /ko --></div>
 				  </div> 
 				</section>
-				<section>
-				  <h3>Models should contain data not logic</h3>
+				<section id="checked-example">
+				  <h3>Checked Binding</h3>
+				  <pre><div class=" code javascript">
+<span class="keyword">var</span> viewModel = {
+    toppings: ko.observableArray([<!-- ko foreach: toppings --><!-- ko if: $index() !== ($parent.toppings.length) -->,<!-- /ko --><span class="string">'<!-- ko text: $data --><!-- /ko -->'</span><!-- /ko -->])
+};
+
+				  </div></pre>
 				  <pre><code >
-class Episode(models.Model):
-    podcast = models.ForeignKey(Podcast)
-    subtitle = models.CharField(max_length=256)
-    title = models.CharField(max_length=256)
-    author = models.CharField(max_length=256)
-    updated = models.DateField()
-    summary = models.TextField()
-    content = models.TextField()
-    link = models.URLField()
-    episode_id = models.CharField(max_length=256)
-
-    def __unicode__(self):
-        return '%s: %s' % (self.podcast.title, self.title)
-
-    def get_absolute_url(self):
-        return reverse('episode', kwargs={'id': self.id, 
-                                          'podcast': self.podcast.id})
+&lt;ul&gt;
+  &lt;li&gt;Cheese &lt;input type="text" data-bind="checked: toppings" value="cheese"/&gt;&lt;/li&gt;
+  &lt;li&gt;Pepperoni &lt;input type="text" data-bind="checked: toppings" value="pepperoni"/&gt;&lt;/li&gt;
+  &lt;li&gt;Vegetarian &lt;input type="text" data-bind="checked: toppings" value="vegi"/&gt;&lt;/li&gt;
+&lt;/ul&gt;
 				  </code></pre>
+<div >
+<ul style="list-style: none">
+  <li><label>Cheese <input type="checkbox" data-bind="checked: toppings" value="cheese"/></label></li>
+  <li><label>Pepperoni <input type="checkbox" data-bind="checked: toppings" value="pepperoni"/></label></li>
+  <li><label>Vegetarian <input type="checkbox" data-bind="checked: toppings" value="vegi"/></label></li>
+</ul>
+</div>				  
 				</section>
 				<section>
 				  <h3>Exception: Factory Methods</h3>
@@ -658,6 +658,12 @@ viewModel.meal = ko.computed(function() {
         return this.food() + ' and ' + this.drink();
     }, viewModel);
 ko.applyBindings(viewModel, document.getElementById('data-binding-example'));
+</script>
+<script type="text/javascript">
+  var checkedViewModel = {
+    toppings: ko.observableArray(['cheese'])
+  };
+ko.applyBindings(checkedViewModel, document.getElementById('checked-example'));
 </script>
 	</body>
 </html>

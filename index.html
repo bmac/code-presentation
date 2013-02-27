@@ -37,8 +37,8 @@
 			<div class="slides">
 
 				<section>
+				  <h1>Building Apps with</h1>
 				  <h1>Knockout.js</h1> 
-				  <h1>Tips and Tricks</h1>
 					<p>
 					  <small>By Brendan McLoughlin</small>
 					</p>
@@ -49,7 +49,7 @@
 					<ul>
 					  <li>What is Knockout.js?</li>
 					  <li>Observables and data binding</li>
-					  <li>Tips and Tricks</li>
+					  <li>Tips and tricks</li>
 					</ul>
 				</section>
 
@@ -58,7 +58,7 @@
 				  <ul>
 				    <li>Automatic dependency tracking</li>
 				    <li>Declarative bindings</li>
-				    <li>Dom Templates</li>
+				    <li>Dom templates</li>
 				  </ul>				  
 				  <aside class="notes">
 				    Knockout was created in 2010 by Steve Sanderson to as a library that provides WPF like data binding for html.
@@ -161,14 +161,14 @@ ko.applyBindings(viewModel, document.getElementById(<span class="string">'data-b
 &lt;ul&gt;
   &lt;li&gt;Cheese &lt;input type="text" data-bind="checked: toppings" value="cheese"/&gt;&lt;/li&gt;
   &lt;li&gt;Pepperoni &lt;input type="text" data-bind="checked: toppings" value="pepperoni"/&gt;&lt;/li&gt;
-  &lt;li&gt;Vegetarian &lt;input type="text" data-bind="checked: toppings" value="vegi"/&gt;&lt;/li&gt;
+  &lt;li&gt;Vegetarian &lt;input type="text" data-bind="checked: toppings" value="vegetarian"/&gt;&lt;/li&gt;
 &lt;/ul&gt;
 				  </code></pre>
 <div >
 <ul style="list-style: none">
   <li><label>Cheese <input type="checkbox" data-bind="checked: toppings" value="cheese"/></label></li>
   <li><label>Pepperoni <input type="checkbox" data-bind="checked: toppings" value="pepperoni"/></label></li>
-  <li><label>Vegetarian <input type="checkbox" data-bind="checked: toppings" value="vegi"/></label></li>
+  <li><label>Vegetarian <input type="checkbox" data-bind="checked: toppings" value="vegetarian"/></label></li>
 </ul>
 </div>				  
 				</section>
@@ -208,18 +208,18 @@ ko.bindingHandlers.number = {
 				<section>
 				  <h3>Downsides to Knockout.js</h3>
 				  <ul>
-				    <li>Creating Observables are expensive</li>
-				    <li>Not Opinionated</li>
-				    <li>Working with 3rd party widget libraries</li>				    
+				    <li>Creating observables are expensive</li>
+				    <li>Not opinionated</li>
+				    <li>Working with third party widget libraries</li>				    
 				  </ul>
 				</section>
 				<section>
-				  <h2>Tips for writing manageable knockout.js code</h2>
+				  <h2>Writing Maintainable Knockout.js</h2>
 				</section>
 				<section>
 				  <section>
 				  <h2>Structure</h2>
-				  <p>If you app is going to have more then two ViewModels spend some time thinking about how you will convert JSON to ViewModels and back to JSON for serialization.</p>
+				  <p>If your application will have more then two ViewModels, spend some time thinking about how you will convert JSON to ViewModels and back to JSON for serialization</p>
 				  </section>
 				<section>
 				  <h1>BaseViewModel</h1>
@@ -256,8 +256,8 @@ ko.bindingHandlers.number = {
 				</section>
 				<section>
 				<section>
-				  <h3>Logic-less data-bindings</h3>
-				  <p>Do not create complex logic in your databindings. If you find yourself using boolean logic operators in a data-binding (&& || < >)  stop and write a nicely named computed observable.</p>
+				  <h3>Logic-less Data Bindings</h3>
+				  <p>Do not create complex logic in your data bindings. If you find yourself using boolean logic operators in a data binding (&& || < >) stop and write a nicely named computed observable</p>
 				</section>
 				<section>
 				  <h3>Bad</h3>
@@ -282,12 +282,12 @@ viewModel.canPrint = ko.computed(function() {
 				<section>
 				<section>
 				  <h3>Non Knockout UI Widgets</h3>
-				  <p>3rd party widgets should be wraped in a custom bindings</p>
+				  <p>Third party widgets should be wraped in a custom bindings</p>
 				</section>
 				<section>
 				  <h3>Why do UI Widgets need custom bindings?</h3>
 				  <p>Knockout.js works best when state is wraped in an observable</p>
-				  <p>Its important to data-bind the ViewModel to any elements before a UI widgets removes the element from the dom. </p>
+				  <p>Its important to data bind the ViewModel to any elements before a UI widgets removes the element from the dom </p>
 				</section>
 				</section>
 				<section>
@@ -298,7 +298,12 @@ viewModel.canPrint = ko.computed(function() {
 				</section>
 
 				<section>
+				<section>
 					<h1>FIN</h1>
+				</section>
+				<section>
+					<h1>Questions?</h1>
+				</section>
 				</section>
 
 			</div>

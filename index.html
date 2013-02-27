@@ -37,7 +37,8 @@
 			<div class="slides">
 
 				<section>
-					<h1>Knockout.js</h1>
+				  <h1>Knockout.js</h1> 
+				  <h1>Tips and Tricks</h1>
 					<p>
 					  <small>By Brendan McLoughlin</small>
 					</p>
@@ -47,8 +48,8 @@
 					<h2>Outline</h2>
 					<ul>
 					  <li>What is Knockout.js?</li>
-					  <li>What can Knockout.js do?</li>
-					  <li>Best Practices</li>
+					  <li>Observables and data binding</li>
+					  <li>Tips and Tricks</li>
 					</ul>
 				</section>
 
@@ -71,7 +72,7 @@
 				    <li>ViewModel</li>
 				  </ul>
 				  <aside class="notes">
-I see MVVM as very similar to MVP where the VM is resposible for the same roles as the P in MVP. The exception is the view model has this idea of a data binding layer. So when values on the viewModel are updated some existing framework takes care of updating the View Layer for you. 
+I see MVVM as very similar to MVP where the VM is resposible for the same roles as the P in MVP. The exception is the view model has this idea of a data binding layer. So when values on the ViewModel are updated some existing framework takes care of updating the View Layer for you. 
 				  </aside>
 				</section>
 
@@ -172,162 +173,62 @@ ko.applyBindings(viewModel, document.getElementById(<span class="string">'data-b
 </div>				  
 				</section>
 				<section>
-				  <h3>Exception: Factory Methods</h3>
+				  <h3>Custom Bindings</h3>
 				  <pre><code >
-class WatchedRecord(models.Model):
-    user = models.ForeignKey(User)
-    episode = models.ForeignKey(Episode)
-    watched = models.BooleanField()
+ko.bindingHandlers.number = {
+    init: function(element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
 
-    @staticmethod 
-    def get_or_create(**kwargs):
-        records = list(WatchedRecord.objects.filter(**kwargs))
-        if records:
-            return records[0]
-        watched_record = WatchedRecord(**kwargs)
-        watched_record.save()
-        return watched_record
-        
+        var observable = valueAccessor();
+        element.addEventListener('change', function() {
+           var number = parseInt(element.value.replace(/,/g, ''), 10);
+           observable(number);
+        });
+    },
 
-    def __unicode__(self):
-        return '%s has %s %s' % (self.user, 'watched' if self.watched else 'not watched', self.episode)
+    update: function(element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
+        var number = ko.utils.unwrapObservable(valueAccessor());
+        element.value = number.toLocalString();
+    }
+};
+				  </code></pre>
+				</section>
+				<section id="number-example">
+				  <h3>Example</h3>
+				  <pre><div class=" code javascript">
+<span class="keyword">var</span> viewModel = {
+    price: ko.observable(<!-- ko text: price --><!-- /ko -->)
+};
 
-    def get_absolute_url(self):
-        return reverse('watched-record', kwargs={'pk': self.id})
+				  </div></pre>
+				  <pre><code >
+&lt;label&gt; Price: &lt;input type="text" data-bind="number: price" /&gt;&lt;/label&gt;
 				  </code></pre>
+<label> Price: <input type="text" data-bind="number: price" /></label>
 				</section>
 				<section>
-				  <h3>Controller Methods Should only interact with the request or only fetch data for the response</h3>
-				  <pre><code>
-class PodcastListView(ListModelMixin, ModelView):
-    resource = PodcastResource
-    form = PodcastCreateForm
-    def put(self, request):
-        link = self.CONTENT['link']
-        podcast = podcastloader.create_podcast_form_feed_link(link)
-        podcastloader.load_episodes_for_podcast(podcast)
-        
-        headers = {}
-        if hasattr(podcast, 'get_absolute_url'):
-            headers['Location'] = podcast.get_absolute_url()
-        return Response(status.HTTP_201_CREATED, podcast, headers)
-				  </code></pre>
+				  <h3>Downsides to Knockout.js</h3>
+				  <ul>
+				    <li>Creating Observables are expensive</li>
+				    <li>Not Opinionated</li>
+				    <li>Working with 3rd party widget libraries</li>				    
+				  </ul>
 				</section>
 				<section>
-				  <h2>Again there are some exceptions</h2>
-				  <pre><code>
-def update_watched_record(request, podcast_id, episode_id):
-    episode = get_object_or_404(Episode, pk=episode_id)
-    watched_record = WatchedRecord.get_or_create(episode=episode, user=request.user)
-    if request.method == 'POST':
-        watched_record.watched = request.POST.get('listened', False)
-        watched_record.save()
-    return HttpResponse(watched_record.watched)
-				  </code></pre>
+				  <h2>Tips for writing manageable knockout.js code</h2>
 				</section>
 				<section>
-				  <h2>Modules</h2>
-				  <p>Code that deals with creating models and performing complex updates should live in their own modules.</p>
-				  <p>I find following this rule helps reduce code duplication and creates more testable code.</p>
-				</section>
-				<section>
-				<section>
-				  <h2>Podcastloader</h2>
-				  <p>The podcastloader module is responsible for converting a feed link into a podcast model</p>
-				  <pre><code>
-def create_podcast_form_feed_link(link):
-    itunes_podcast_xml = feedparser.parse(link)
-    podcast_feed = itunes_podcast_xml.feed
-
-    podcast = Podcast(
-        last_updated = datetime.fromtimestamp(mktime(itunes_podcast_xml.updated_parsed)),
-        version = itunes_podcast_xml.version,
-        itunes_namespace = itunes_podcast_xml.namespaces['itunes'],
-        publisher = podcast_feed.publisher,
-        subtitle = podcast_feed.subtitle,
-        link = link,
-        title = podcast_feed.title,
-        rights = podcast_feed.rights,
-        author = podcast_feed.author, 
-        email = podcast_feed.authors[0]['email'],
-        summary = podcast_feed.summary
-        )
-
-    podcast.save()
-    return podcast
-				  </code></pre>
-				</section>
-				<section>
-				  <pre><code>
-def load_episodes_for_podcast(podcast):
-    feed = feedparser.parse(podcast.link)
-    new_episodes = []
-    for entry in feed.entries:
-        link = entry.links[0]['href']
-        matching_episode = list(podcast.episode_set.filter(link=link))
-        if not matching_episode:
-            episode = Episode(
-                podcast=podcast,
-                subtitle=entry.subtitle,
-                title=entry.title,
-                author=entry.author,
-                updated=datetime.fromtimestamp(mktime(entry.updated_parsed)),
-                summary=entry.summary,
-                link=link
-                )
-            episode.save()
-            new_episodes.append(episode)
-    return new_episodes
-				  </code></pre>
-				</section>
-				</section>
-				<section>
-				  <h1>Browser Code</h1>
-				</section>
-				<section>
-				  <h1>main.js</h1>
-				  <pre><code>
-require(['audioViewModel', 'addPodcastViewModel', 'podcastManager'], function(AudioViewModel, AddPodcastViewModel, PodcastManager) {
-    var audioViewModel = new AudioViewModel();
-    var addPodcastViewModel = new AddPodcastViewModel();
-    var podcastManager = new PodcastManager();
-});
-				  </code></pre>
-				</section>
-				<section>
-				  <h1>audioViewModel.js</h1>
-				  <pre><code>
-    var AudioViewModel = BaseViewModel.extend({
-	el: '#audio-controls',
-	defaults: {
-	    audioUrl: ''
-	},
-	init: function(observables) {
-	    this._super(observables);
-	    this.audio = $(this.el).find('audio')[0];
-	    this.applyBindings();
-	    vent.on('playAudio', this._playAudio.bind(this));
-	},
-	_playAudio: function(event, newAudioUrl) {
-	    this.audioUrl(newAudioUrl);
-	    this.audio.play();
-	}
-    });
-				  </code></pre>
-				</section>
-				<section>
+				  <section>
+				  <h2>Structure</h2>
+				  <p>If you app is going to have more then two ViewModels spend some time thinking about how you will convert JSON to ViewModels and back to JSON for serialization.</p>
+				  </section>
 				<section>
 				  <h1>BaseViewModel</h1>
 				  <pre><code>
-    var baseViewModel = Class.extend({
+    var BaseViewModel = Class.extend({
 	init: function(object) {
 	    observableExtend(this, this.defaults);
 	    observableExtend(this, object);
-	    this.el = $(this.el)[0];
-	},
-	applyBindings: function() {
-	    ko.applyBindings(this, this.el);
-	}
+	}        
     });
 
 				  </code></pre>
@@ -352,267 +253,52 @@ require(['audioViewModel', 'addPodcastViewModel', 'podcastManager'], function(Au
 
 				  </code></pre>
 				</section>
-				<section>
-				  <h1>baseViewModel.js</h1>
-				  <pre><code>
-define(['class', 'knockout-2.2.1'], function(Class, ko) {
-
-    var observableExtend = function(target, object) {
-	for (var key in object) {
-	    if (object.hasOwnProperty(key)) {
-		target[key] = createObservable(object[key]);
-	    }
-	}
-    };
-
-    var createObservable = function(value) {
-	if (Array.isArray(value)) {
-	    return ko.observableArray(value);
-	}
-	return ko.observable(value);
-    };
-
-    var baseViewModel = Class.extend({
-	init: function(object) {
-	    observableExtend(this, this.defaults);
-	    observableExtend(this, object);
-	    this.el = $(this.el)[0];
-	},
-	applyBindings: function() {
-	    ko.applyBindings(this, this.el);
-	}
-    });
-
-    return baseViewModel;
-});
-				  </code></pre>
-				</section>
-				</section>
-				<section>
-				  <h2>Shared Event Buffer</h2>
-				  <pre><code>
-define(['jquery'], function($) {
-    var _vent = $({});
-
-    var vent = {
-	on: function() {
-	    return _vent.on.apply(_vent, arguments);
-	},
-	off: function() {
-	    return _vent.off.apply(_vent, arguments);
-	},
-	trigger: function() {
-	    return _vent.trigger.apply(_vent, arguments);
-	}
-    };
-
-    return vent;
-});
-				  </code></pre>
-				</section>
-				<section>
-				  <pre><code>
-    var AudioViewModel = BaseViewModel.extend({
-	el: '#audio-controls',
-	defaults: {
-	    audioUrl: ''
-	},
-	init: function(observables) {
-	    this._super(observables);
-	    this.audio = $(this.el).find('audio')[0];
-	    this.applyBindings();
-	    vent.on('playAudio', this._playAudio.bind(this));
-	},
-	_playAudio: function(event, newAudioUrl) {
-	    this.audioUrl(newAudioUrl);
-	    this.audio.play();
-	}
-    });
-				  </code></pre>
-				  <pre><code>
-      &lt;div id="audio-controls" class="audio-controls"&gt;
-        &lt;audio controls data-bind="attr: {src: audioUrl}"&gt;
-      &lt;/div&gt;
-				  </code></pre>
-				</section>
-				<section>
-				  <h3>AddPodcastViewModel</h3>
-				  <pre><code>
-    var AddPodcastViewModel = BaseViewModel.extend({
-	el: '#add-podcast',
-	defaults: {
-	    link: '',
-	    error: ''
-	},
-	init: function(observables) {
-	    var self = this;
-	    self._super(observables);
-
-	    self.canCreate = ko.computed(function() {
-		return !!self.link().length;
-	    });
-	    self.applyBindings();
-	},
-	createPodcast: function() {
-	    var self = this;
-	    self.error('');
-	    $.ajax({
-		method: 'PUT',
-		url: 'resources/podcast/',
-		data: {
-		    link: self.link().trim()
-		}
-	    }).done(function() {
-		vent.trigger('podcastAdded');
-	    }).fail(function(jqXhr) {
-		self.error(jqXhr.statusText);
-	    });
-	}
-    });
-				  </code></pre>
-				</section>
-				<section>
-				  <h3>Add Podcast Html</h3>
-				  <pre><code>
-      &lt;div id="add-podcast" class="add-podcast"&gt;
-        &lt;input type="text" data-bind="value: link" placeholder="Itunes feed link"/&gt;
-        &lt;button data-bind="click: createPodcast" class="btn"&gt;Add Podcast&lt;/button&gt;
-        &lt;div class="error" data-bind="text: error"&gt;&lt;/div&gt;
-      &lt;/div&gt;
-				  </code></pre>
-				</section>
-				<section>
-				  <h3>PodcastManager</h3>
-				  <pre><code>
-    var PodcastManager = BaseViewModel.extend({
-	el: '#podcast-list',
-	defaults: {
-	    podcasts: []
-	},
-	init: function() {
-	    var self = this;
-	    self._super();
-	    self.applyBindings();
-	    $.getJSON('/resources/podcast/').done(function(podcasts) {
-		var viewModels = podcasts.map(function(podcast) {
-		    return new PodcastViewModel(podcast);
-		});
-    		self.podcasts(viewModels);
-	    });
-	}
-    });
-    return PodcastManager;
-				  </code></pre>
-				</section>
-				<section>
-				  <h3>PodcastManager HTML</h3>
-				  <pre><code>
-&lt;div id="podcast-list" data-bind="template: { name: 'podcast-template', foreach: podcasts }"&gt;&lt;/div&gt;
-				  </code></pre>
 				</section>
 				<section>
 				<section>
-				  <h3>PodcastViewModel</h3>
+				  <h3>Logic-less data-bindings</h3>
+				  <p>Do not create complex logic in your databindings. If you find yourself using boolean logic operators in a data-binding (&& || < >)  stop and write a nicely named computed observable.</p>
+				</section>
+				<section>
+				  <h3>Bad</h3>
 				  <pre><code>
-    var podcastViewModel = BaseViewModel.extend({
-	defaults: {
-	    showNew: true
-	},
-	init: function(podcast) {
-	    var self = this;
-	    podcast.episode_set = podcast.episode_set.map(function(episode) {
-		return new EpisodeViewModel(episode);
-	    });
-
-	    self._super(podcast);
-
-	    self.episodes = ko.computed(function() {
-		if (self.showNew()) {
-		    return filterUnlistenedEpisodes(self.episode_set());
-		}
-		return self.episode_set();
-	    });
-	},
-	playPodcast: function(episode) {
-	    vent.trigger('playAudio', episode.link);
-	}
-    });
-
+&lt;button data-bind="click: print, enabled: items.length && transactionComplete()"&gt;Print Reciept&lt;/button&gt;
 				  </code></pre>
 				</section>
 				<section>
-				  <h3>PodcastViewModel</h3>
+				  <h3>Good</h3>
 				  <pre><code>
-    var filterUnlistenedEpisodes = function(episodes) {
-	return episodes.filter(function(episode) {
-	    return !episode.listened();
-	});
-    };
+&lt;button data-bind="click: print, enabled: canPrint"&gt;Print Reciept&lt;/button&gt;
 				  </code></pre>
-				</section>
-				<section>
 				  <pre><code>
-      &lt;div class="podcast"&gt;
-	&lt;div class="container"&gt;
-          &lt;h3 data-bind="text: title" class="podcast-title"&gt;&lt;/h3&gt;
-          &lt;label class="podcast-filter"&gt;Show new Episodes: &lt;input type="checkbox" data-bind="checked: showNew" /&gt;&lt;/label&gt;
-	&lt;/div&gt;
-        &lt;p data-bind="text: summary"&gt;&lt;/p&gt;
-        &lt;ul class="podcast-list" data-bind="foreach: episodes"&gt;
-          &lt;li class="episode" &gt;
-            &lt;a data-bind="text: title, attr: {title: summary}, click: $parent.playPodcast" href="#"&gt;&lt;/a&gt;
-            &lt;time data-bind="attr: {datetime: updated}" class="podcast-date"&gt;
-	      (&lt;!-- ko text: updated --&gt;&lt;!-- /ko --&gt;)
-	    &lt;/time&gt;
-            &lt;label class="episode-listened"&gt;
-	      Listened:
-	      &lt;input type="checkbox" data-bind="checked: listened" /&gt;
-	    &lt;/label&gt;
-	    &lt;p data-bind="text: summary"&gt;&lt;/p&gt;
-          &lt;/li&gt;
-        &lt;/ul&gt;
-      &lt;/div&gt;
+//...
+viewModel.canPrint = ko.computed(function() {
+    return this.items.length && this.transactionComplete();
+}, viewModel);
+//...
 				  </code></pre>
 				</section>
 				</section>
 				<section>
 				<section>
-					<h3>EpisodeViewModel</h3>
-					<pre><code contenteditable>
-    var url = 'episode/:episode_id/listened/';
-
-    var EpisodeViewModel = BaseViewModel.extend({
-	init: function(episode) {
-	    this._super(episode);
-	    this.listened.subscribe(this._updateListened.bind(this));
-	},
-	_updateListened: function(new_value) {
-	    var update_url = this.podcast + url.replace(':episode_id', this.id);
-	    $.post(update_url, {listened: new_value});
-	}
-    });
-					</code></pre>
+				  <h3>Non Knockout UI Widgets</h3>
+				  <p>3rd party widgets should be wraped in a custom bindings</p>
 				</section>
 				<section>
-				  <pre><code>
-          &lt;li class="episode" &gt;
-            &lt;a data-bind="text: title, attr: {title: summary}, click: $parent.playPodcast" href="#"&gt;&lt;/a&gt;
-            &lt;time data-bind="attr: {datetime: updated}" class="podcast-date"&gt;
-	      (&lt;!-- ko text: updated --&gt;&lt;!-- /ko --&gt;)
-	    &lt;/time&gt;
-            &lt;label class="episode-listened"&gt;
-	      Listened:
-	      &lt;input type="checkbox" data-bind="checked: listened" /&gt;
-	    &lt;/label&gt;
-	    &lt;p data-bind="text: summary"&gt;&lt;/p&gt;
-          &lt;/li&gt;				      
-				  </code></pre>
+				  <h3>Why do UI Widgets need custom bindings?</h3>
+				  <p>Knockout.js works best when state is wraped in an observable</p>
+				  <p>Its important to data-bind the ViewModel to any elements before a UI widgets removes the element from the dom. </p>
 				</section>
+				</section>
+				<section>
+				  <h3>Testing</h3>
+				  <p>2 layers</p>
+				  <p>QUnit/Jasmine/Mocha for ViewModels</p>
+				  <p>Selenium for testing the bindings</p>
 				</section>
 
 				<section>
-					<h1>THE END</h1>
-					<h3>By Brendan McLoughlin</h3>
+					<h1>FIN</h1>
 				</section>
 
 			</div>
@@ -664,6 +350,27 @@ ko.applyBindings(viewModel, document.getElementById('data-binding-example'));
     toppings: ko.observableArray(['cheese'])
   };
 ko.applyBindings(checkedViewModel, document.getElementById('checked-example'));
+</script>
+<script type="text/javascript">
+ko.bindingHandlers.number = {
+    init: function(element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
+
+        var observable = valueAccessor();
+        element.addEventListener('change', function() {
+           var number = parseInt(element.value.replace(/,/g, ''), 10);
+           observable(number);
+        });
+    },
+
+    update: function(element, valueAccessor, allBindingsAccessor, viewModel, bindingContext) {
+        var number = ko.utils.unwrapObservable(valueAccessor()) || '';
+        element.value = number.toLocaleString();
+    }
+};
+  var numberViewModel = {
+    price: ko.observable()
+  };
+ko.applyBindings(numberViewModel, document.getElementById('number-example'));
 </script>
 	</body>
 </html>

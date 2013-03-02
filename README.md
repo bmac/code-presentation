@@ -1,2 +1,2 @@
-Knockout JS presentation
+Knockout.js Presentation
 ============
